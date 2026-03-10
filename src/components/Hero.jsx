@@ -95,6 +95,20 @@ const Hero = () => {
                     video.onloadedmetadata = setupVideoScrub;
                 }
             }
+
+            if (isMobile) {
+                // Move video downward on mobile and let it settle around the cocktails mid area.
+                gsap.to('.video', {
+                    y: () => window.innerHeight * 0.62,
+                    ease: 'none',
+                    scrollTrigger: {
+                        trigger: '#cocktails .list',
+                        start: 'top 92%',
+                        end: 'top 45%',
+                        scrub: true,
+                    },
+                });
+            }
         };
 
         initAnimations();
