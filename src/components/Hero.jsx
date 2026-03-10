@@ -56,43 +56,49 @@ const Hero = () => {
             const startValue = isMobile ? 'top 70%' : 'center 60%';
             const endValue = 'bottom top';
 
-            videoTimelineRef.current = gsap.timeline({
-                scrollTrigger: {
-                    trigger: 'video',
-                    start: startValue,
-                    end: endValue,
-                    scrub: isMobile ? 0.15 : true,
-                    pin: !isMobile,
-                    anticipatePin: 1,
-                },
-            });
-
             if (videoRef.current) {
                 const video = videoRef.current;
-                const playhead = { time: 0 };
-
-                const updateVideoTime = () => {
-                    // Skip tiny seeks to reduce decoder churn on mobile browsers.
-                    if (Math.abs(video.currentTime - playhead.time) > 0.016) {
-                        video.currentTime = playhead.time;
-                    }
-                };
-
-                const setupVideoScrub = () => {
-                    video.pause();
+                // On mobile, native playback is smoother than frame-by-frame seeks.
+                if (isMobile) {
                     video.currentTime = 0;
-
-                    videoTimelineRef.current.to(playhead, {
-                        time: Math.max(video.duration - 0.05, 0),
-                        ease: 'none',
-                        onUpdate: updateVideoTime,
-                    });
-                };
-
-                if (video.readyState >= 1) {
-                    setupVideoScrub();
+                    video.playbackRate = 0.85;
+                    video.play().catch(() => {});
                 } else {
-                    video.onloadedmetadata = setupVideoScrub;
+                    const playhead = { time: 0 };
+
+                    videoTimelineRef.current = gsap.timeline({
+                        scrollTrigger: {
+                            trigger: 'video',
+                            start: startValue,
+                            end: endValue,
+                            scrub: true,
+                            pin: true,
+                            anticipatePin: 1,
+                        },
+                    });
+
+                    const updateVideoTime = () => {
+                        if (Math.abs(video.currentTime - playhead.time) > 0.016) {
+                            video.currentTime = playhead.time;
+                        }
+                    };
+
+                    const setupVideoScrub = () => {
+                        video.pause();
+                        video.currentTime = 0;
+
+                        videoTimelineRef.current.to(playhead, {
+                            time: Math.max(video.duration - 0.05, 0),
+                            ease: 'none',
+                            onUpdate: updateVideoTime,
+                        });
+                    };
+
+                    if (video.readyState >= 1) {
+                        setupVideoScrub();
+                    } else {
+                        video.onloadedmetadata = setupVideoScrub;
+                    }
                 }
             }
 
@@ -115,6 +121,7 @@ const Hero = () => {
 
         return () => {
             isUnmounted = true;
+            if (videoRef.current) videoRef.current.pause();
             if (videoRef.current) videoRef.current.onloadedmetadata = null;
             if (videoTimelineRef.current) videoTimelineRef.current.kill();
             if (heroSplit) heroSplit.revert();
@@ -160,6 +167,8 @@ const Hero = () => {
         src="/videos/output.mp4"
         muted
         playsInline
+        autoPlay={isMobile}
+        loop={isMobile}
                 preload="metadata" />
      </div>
      </>
