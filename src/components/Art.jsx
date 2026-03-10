@@ -14,17 +14,17 @@ const Art = () => {
             scrollTrigger:{
                 trigger: '#art',
                 start,
-                end: 'bottom center',
-                scrub: 1.5,
+                end: '+=140%',
+                scrub: true,
                 pin: true
             }
         })
 
         maskTimeline.to('.will-fade',{
             opacity: 0, stagger: 0.2, ease: 'power1.inOut',})
-            .to('.masked-img',{scale: 1.3, maskPosition: 'center', maskSize: '400%', duration:1, ease: 'power1.inOut'})
+            .to('.masked-img',{scale: 1.3, maskPosition: 'center', maskSize: '400%', duration:1.4, ease: 'power1.inOut'})
             .to('#masked-content',{ opacity: 1, duration: 1, ease: 'power1.inOut'})
-    })
+    }, { dependencies: [isMobile], revertOnUpdate: true })
 
     return(
         <div id="art">
