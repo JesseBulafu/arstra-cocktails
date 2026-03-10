@@ -53,50 +53,46 @@ const Hero = () => {
                 .to('.right-leaf', { y: 200 }, 0)
                 .to('.left-leaf', { y: -200 }, 0);
 
-            if (isMobile) {
-                // Mobile fallback: avoid frame-by-frame video scrubbing for smoother touch scrolling.
-                gsap.fromTo(
-                    '.video',
-                    { yPercent: 8, opacity: 0.9 },
-                    {
-                        yPercent: -8,
-                        opacity: 1,
-                        scrollTrigger: {
-                            trigger: '#hero',
-                            start: 'top top',
-                            end: 'bottom top',
-                            scrub: true,
-                        },
+            const startValue = isMobile ? 'top 70%' : 'center 60%';
+            const endValue = 'bottom top';
+
+            videoTimelineRef.current = gsap.timeline({
+                scrollTrigger: {
+                    trigger: 'video',
+                    start: startValue,
+                    end: endValue,
+                    scrub: isMobile ? 0.15 : true,
+                    pin: !isMobile,
+                    anticipatePin: 1,
+                },
+            });
+
+            if (videoRef.current) {
+                const video = videoRef.current;
+                const playhead = { time: 0 };
+
+                const updateVideoTime = () => {
+                    // Skip tiny seeks to reduce decoder churn on mobile browsers.
+                    if (Math.abs(video.currentTime - playhead.time) > 0.016) {
+                        video.currentTime = playhead.time;
                     }
-                );
+                };
 
-                if (videoRef.current) {
-                    videoRef.current.play().catch(() => {
-                        // Ignore autoplay rejection when browser policies block it.
+                const setupVideoScrub = () => {
+                    video.pause();
+                    video.currentTime = 0;
+
+                    videoTimelineRef.current.to(playhead, {
+                        time: Math.max(video.duration - 0.05, 0),
+                        ease: 'none',
+                        onUpdate: updateVideoTime,
                     });
-                }
-            } else {
-                const startValue = 'center 60%';
-                const endValue = 'bottom top';
+                };
 
-                // Desktop: keep frame-by-frame scroll scrubbing.
-                videoTimelineRef.current = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: 'video',
-                        start: startValue,
-                        end: endValue,
-                        scrub: true,
-                        pin: true,
-                    },
-                });
-
-                if (videoRef.current) {
-                    videoRef.current.onloadedmetadata = () => {
-                        videoTimelineRef.current.to(videoRef.current, {
-                            currentTime: videoRef.current.duration,
-                            ease: 'none',
-                        });
-                    };
+                if (video.readyState >= 1) {
+                    setupVideoScrub();
+                } else {
+                    video.onloadedmetadata = setupVideoScrub;
                 }
             }
         };
@@ -149,10 +145,8 @@ const Hero = () => {
         ref={videoRef}
         src="/videos/output.mp4"
         muted
-          autoPlay={isMobile}
-          loop={isMobile}
         playsInline
-          preload={isMobile ? "metadata" : "auto"} />
+                preload="metadata" />
      </div>
      </>
     )
